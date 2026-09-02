@@ -1,0 +1,33 @@
+{% load welfare_extras %}
+{% if employee and voucher_type %}
+  <div class="card">
+    <div class="card-body">
+      <h2 class="h6">Riepilogo assegnazione</h2>
+      <dl class="row mb-0 small">
+        <dt class="col-7">Dipendente</dt><dd class="col-5 text-end">{{ employee.display_name }}</dd>
+        <dt class="col-7">Valore unitario</dt><dd class="col-5 text-end">€ {{ voucher_type.unit_value|euro }}</dd>
+        <dt class="col-7">Quantità</dt><dd class="col-5 text-end">{{ quantity }}</dd>
+        <dt class="col-7">Valore dell'assegnazione</dt><dd class="col-5 text-end fw-semibold">€ {{ new_value|euro }}</dd>
+        <dt class="col-7">Budget assegnato</dt><dd class="col-5 text-end">€ {{ budget_amount|euro }}</dd>
+        <dt class="col-7">Ancora allocabile su questo voucher</dt><dd class="col-5 text-end">€ {{ allocatable|euro }}</dd>
+        <dt class="col-7">Non allocato dopo il salvataggio</dt>
+        <dd class="col-5 text-end {% if projected_unallocated < 0 %}text-danger fw-semibold{% endif %}">€ {{ projected_unallocated|euro }}</dd>
+      </dl>
+      {% if current_allocation %}
+        <hr>
+        <p class="small mb-0">
+          Allocazione attuale: <strong>{{ current_allocation.quantity_assigned }}</strong> voucher,
+          di cui già richiesti/consegnati <strong>{{ consumed }}</strong>
+          (non è possibile scendere sotto questo valore).
+        </p>
+      {% endif %}
+      {% if projected_unallocated < 0 %}
+        <div class="alert alert-danger mt-3 mb-0 small">
+          L'assegnazione supera il budget del dipendente e verrà rifiutata dal sistema.
+        </div>
+      {% endif %}
+    </div>
+  </div>
+{% else %}
+  <div class="alert alert-secondary mb-0">Seleziona dipendente e tipo voucher per vedere il riepilogo.</div>
+{% endif %}

@@ -1,0 +1,27 @@
+{% extends "welfare/base.html" %}
+{% block title %}Programmi welfare{% endblock %}
+{% block page_title %}Programmi welfare{% endblock %}
+{% block page_actions %}<a class="btn btn-primary" href="{% url 'admin_program_create' %}">Nuovo programma</a>{% endblock %}
+{% block content %}
+{% include "welfare/manage/_nav.html" with active='programs' %}
+<div class="card">
+  <div class="table-responsive">
+    <table class="table align-middle mb-0">
+      <thead><tr><th>Nome</th><th>Periodo</th><th>Stato</th><th></th></tr></thead>
+      <tbody>
+      {% for item in programs %}
+        <tr>
+          <td>{{ item.name }}<div class="small text-muted">{{ item.description|truncatechars:80 }}</div></td>
+          <td>{{ item.start_date|date:"d/m/Y"|default:"—" }} → {{ item.end_date|date:"d/m/Y"|default:"—" }}</td>
+          <td>{% if item.active %}<span class="badge text-bg-success">Attivo</span>{% else %}<span class="badge text-bg-secondary">Chiuso</span>{% endif %}</td>
+          <td class="text-end"><a class="btn btn-sm btn-outline-secondary" href="{% url 'admin_program_edit' item.pk %}">Modifica</a></td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="4" class="text-muted">Nessun programma welfare.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+<p class="form-text">Ogni iniziativa welfare è indipendente: non esistono rinnovi automatici né riporto del credito.</p>
+{% endblock %}

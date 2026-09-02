@@ -1,0 +1,9 @@
+<ul class="nav nav-pills flex-wrap gap-1 mb-4">
+  <li class="nav-item"><a class="nav-link {% if active == 'dashboard' %}active{% endif %}" href="{% url 'admin_dashboard' %}">Cruscotto</a></li>
+  <li class="nav-item"><a class="nav-link {% if active == 'employees' %}active{% endif %}" href="{% url 'admin_employees' %}">Dipendenti e budget</a></li>
+  <li class="nav-item"><a class="nav-link {% if active == 'allocations' %}active{% endif %}" href="{% url 'admin_allocations' %}">Allocazioni</a></li>
+  <li class="nav-item"><a class="nav-link {% if active == 'requests' %}active{% endif %}" href="{% url 'admin_requests' %}">Richieste</a></li>
+  <li class="nav-item"><a class="nav-link {% if active == 'deliveries' %}active{% endif %}" href="{% url 'admin_deliveries' %}">Consegne</a></li>
+  <li class="nav-item"><a class="nav-link {% if active == 'conventions' %}active{% endif %}" href="{% url 'admin_conventions' %}">Convenzioni</a></li>
+  <li class="nav-item"><a class="nav-link {% if active == 'programs' %}active{% endif %}" href="{% url 'admin_programs' %}">Programmi</a></li>
+</ul>

@@ -1,0 +1,34 @@
+{% extends "welfare/base.html" %}{% load welfare_extras %}
+{% block title %}Richiedi voucher{% endblock %}
+{% block page_title %}Richiedi voucher{% endblock %}
+{% block content %}
+<div class="row g-4">
+  <div class="col-lg-7">
+    <div class="card">
+      <div class="card-body">
+        <dl class="row mb-3">
+          <dt class="col-sm-4">Convenzione</dt><dd class="col-sm-8">{{ allocation.voucher_type.convention.name }}</dd>
+          <dt class="col-sm-4">Tipo voucher</dt><dd class="col-sm-8">{{ allocation.voucher_type.name }}</dd>
+          <dt class="col-sm-4">Descrizione</dt><dd class="col-sm-8">{{ allocation.voucher_type.description|default:"—" }}</dd>
+          <dt class="col-sm-4">Valore unitario</dt><dd class="col-sm-8">€ {{ allocation.voucher_type.unit_value|euro }}</dd>
+          <dt class="col-sm-4">Quantità disponibile</dt><dd class="col-sm-8"><span class="badge text-bg-success">{{ allocation.quantity_available }}</span></dd>
+        </dl>
+        <form method="post" enctype="multipart/form-data" novalidate>
+          {% csrf_token %}
+          {% include "welfare/partials/form_fields.html" %}
+          <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-primary">Invia richiesta</button>
+            <a class="btn btn-outline-secondary" href="{% url 'my_vouchers' %}">Annulla</a>
+          </div>
+          <p class="form-text mt-2">Una volta inviata, la richiesta non può essere modificata o eliminata.</p>
+        </form>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-5">
+    <div id="riepilogo-richiesta">
+      {% include "welfare/partials/request_summary.html" with quantity=0 %}
+    </div>
+  </div>
+</div>
+{% endblock %}

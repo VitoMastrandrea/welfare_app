@@ -1,0 +1,7 @@
+{% extends "welfare/base.html" %}
+{% block title %}Pagina non trovata{% endblock %}
+{% block page_title %}Pagina non trovata{% endblock %}
+{% block content %}
+<div class="alert alert-warning">La pagina richiesta non esiste o non è più disponibile.</div>
+<a class="btn btn-outline-secondary" href="{% url 'dashboard' %}">Torna alla home</a>
+{% endblock %}

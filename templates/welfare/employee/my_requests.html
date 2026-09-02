@@ -1,0 +1,51 @@
+{% extends "welfare/base.html" %}{% load welfare_extras %}
+{% block title %}Le mie richieste{% endblock %}
+{% block page_title %}Le mie richieste e consegne{% endblock %}
+{% block content %}
+{% if not events %}
+  <div class="alert alert-secondary">Non hai ancora effettuato richieste e non risultano consegne.</div>
+{% else %}
+  <div class="card">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead>
+          <tr><th>Data</th><th>Voucher</th><th class="text-end">Quantità</th><th class="text-end">Valore</th><th>Stato</th><th></th></tr>
+        </thead>
+        <tbody>
+        {% for event in events %}
+          <tr>
+            <td class="text-nowrap">{{ event.date|date:"d/m/Y" }}</td>
+            <td>
+              <div>{{ event.voucher_type.convention.name }} — {{ event.voucher_type.name }}</div>
+              <div class="small text-muted">€ {{ event.voucher_type.unit_value|euro }} per voucher</div>
+            </td>
+            <td class="text-end">{{ event.quantity }}</td>
+            <td class="text-end">€ {{ event.value|euro }}</td>
+            <td>
+              {% if event.kind == 'direct_delivery' %}
+                <span class="badge text-bg-secondary">Consegna diretta dall'amministrazione</span>
+                {% if event.delivery.notes %}<div class="small text-muted">{{ event.delivery.notes }}</div>{% endif %}
+              {% else %}
+                <span class="badge text-bg-{{ event.request.status_css }}">{{ event.request.status_label|upper }}</span>
+                {% if event.request.is_approved and not event.delivery %}
+                  <div class="small text-muted">In attesa di consegna</div>
+                {% elif event.delivery %}
+                  <div class="small text-muted">Consegnata il {{ event.delivery.delivered_at|date:"d/m/Y" }}</div>
+                {% elif event.request.is_rejected and event.request.rejection_reason %}
+                  <div class="small text-muted">Motivo: {{ event.request.rejection_reason }}</div>
+                {% endif %}
+              {% endif %}
+            </td>
+            <td class="text-end">
+              {% if event.request %}
+                <a class="btn btn-sm btn-outline-secondary" href="{% url 'request_detail' event.request.pk %}">Dettaglio</a>
+              {% endif %}
+            </td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,27 @@
+{% extends "welfare/base.html" %}{% load welfare_extras %}
+{% block title %}Consegna diretta{% endblock %}
+{% block page_title %}Consegna diretta a {{ employee.display_name }}{% endblock %}
+{% block content %}
+{% include "welfare/manage/_nav.html" with active='deliveries' %}
+<div class="alert alert-info">
+  Registra la consegna di voucher effettuata fuori piattaforma, senza una richiesta del dipendente.
+  L'operazione comparirà nello storico del dipendente come consegna diretta dall'amministrazione.
+</div>
+<div class="row g-4">
+  <div class="col-lg-6">
+    <div class="card"><div class="card-body">
+      <form method="post" novalidate>
+        {% csrf_token %}
+        {% include "welfare/partials/form_fields.html" %}
+        <div class="d-flex gap-2">
+          <button type="submit" class="btn btn-primary">Registra consegna</button>
+          <a class="btn btn-outline-secondary" href="{% url 'admin_employee_detail' employee.pk %}">Annulla</a>
+        </div>
+      </form>
+    </div></div>
+  </div>
+  <div class="col-lg-6"><div id="riepilogo-consegna">
+    {% include "welfare/partials/delivery_summary.html" with allocation=None %}
+  </div></div>
+</div>
+{% endblock %}

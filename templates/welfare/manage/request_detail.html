@@ -1,0 +1,95 @@
+{% extends "welfare/base.html" %}{% load welfare_extras %}
+{% block title %}Richiesta #{{ voucher_request.pk }}{% endblock %}
+{% block page_title %}Richiesta #{{ voucher_request.pk }}{% endblock %}
+{% block page_actions %}<a class="btn btn-outline-secondary" href="{% url 'admin_requests' %}">Torna alle richieste</a>{% endblock %}
+{% block content %}
+{% include "welfare/manage/_nav.html" with active='requests' %}
+<div class="row g-4">
+  <div class="col-lg-7">
+    <div class="card mb-3"><div class="card-body">
+      <dl class="row mb-0">
+        <dt class="col-sm-4">Dipendente</dt>
+        <dd class="col-sm-8"><a href="{% url 'admin_employee_detail' voucher_request.allocation.employee.pk %}">{{ voucher_request.allocation.employee.display_name }}</a></dd>
+        <dt class="col-sm-4">Data richiesta</dt><dd class="col-sm-8">{{ voucher_request.requested_at|date:"d/m/Y H:i" }}</dd>
+        <dt class="col-sm-4">Convenzione</dt><dd class="col-sm-8">{{ voucher_request.allocation.voucher_type.convention.name }}</dd>
+        <dt class="col-sm-4">Tipo voucher</dt><dd class="col-sm-8">{{ voucher_request.allocation.voucher_type.name }}</dd>
+        <dt class="col-sm-4">Valore unitario</dt><dd class="col-sm-8">€ {{ voucher_request.allocation.voucher_type.unit_value|euro }}</dd>
+        <dt class="col-sm-4">Quantità</dt><dd class="col-sm-8">{{ voucher_request.quantity }}</dd>
+        <dt class="col-sm-4">Valore complessivo</dt><dd class="col-sm-8">€ {{ voucher_request.total_value|euro }}</dd>
+        <dt class="col-sm-4">Stato</dt><dd class="col-sm-8"><span class="badge text-bg-{{ voucher_request.status_css }}">{{ voucher_request.status_label|upper }}</span></dd>
+        {% if voucher_request.processed_by %}
+          <dt class="col-sm-4">Elaborata da</dt>
+          <dd class="col-sm-8">{{ voucher_request.processed_by.get_full_name|default:voucher_request.processed_by.username }} il {{ voucher_request.processed_at|date:"d/m/Y H:i" }}</dd>
+        {% endif %}
+        {% if voucher_request.is_rejected %}
+          <dt class="col-sm-4">Motivo del rifiuto</dt><dd class="col-sm-8">{{ voucher_request.rejection_reason|default:"—" }}</dd>
+        {% endif %}
+        {% if voucher_request.delivery_obj %}
+          <dt class="col-sm-4">Consegna</dt>
+          <dd class="col-sm-8">Registrata il {{ voucher_request.delivery_obj.delivered_at|date:"d/m/Y H:i" }}
+            da {{ voucher_request.delivery_obj.delivered_by|default:"—" }}
+            {% if voucher_request.delivery_obj.notes %}<div class="small text-muted">{{ voucher_request.delivery_obj.notes }}</div>{% endif %}
+          </dd>
+        {% endif %}
+      </dl>
+    </div></div>
+
+    <div class="card">
+      <div class="card-header fw-semibold">Situazione dell'allocazione</div>
+      <div class="card-body">{% include "welfare/partials/counters.html" with allocation=allocation %}</div>
+    </div>
+  </div>
+
+  <div class="col-lg-5">
+    <div class="card mb-3">
+      <div class="card-header fw-semibold">Allegati</div>
+      <ul class="list-group list-group-flush">
+        {% for attachment in voucher_request.attachments.all %}
+          <li class="list-group-item d-flex justify-content-between align-items-center gap-2">
+            <span class="text-truncate">{{ attachment.original_filename }}</span>
+            <a class="btn btn-sm btn-outline-primary" href="{% url 'attachment_download' attachment.pk %}">Scarica</a>
+          </li>
+        {% empty %}
+          <li class="list-group-item text-muted">Nessun allegato.</li>
+        {% endfor %}
+      </ul>
+    </div>
+
+    {% if voucher_request.is_pending %}
+      <div class="card mb-3">
+        <div class="card-header fw-semibold">Approva</div>
+        <div class="card-body">
+          <form method="post" action="{% url 'admin_request_approve' voucher_request.pk %}">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-success w-100">Approva richiesta</button>
+          </form>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header fw-semibold">Rifiuta</div>
+        <div class="card-body">
+          <form method="post" action="{% url 'admin_request_reject' voucher_request.pk %}" novalidate>
+            {% csrf_token %}
+            {% include "welfare/partials/form_fields.html" with form=reject_form %}
+            <button type="submit" class="btn btn-outline-danger w-100">Rifiuta richiesta</button>
+          </form>
+        </div>
+      </div>
+    {% elif voucher_request.can_be_delivered %}
+      <div class="card">
+        <div class="card-header fw-semibold">Registra consegna</div>
+        <div class="card-body">
+          <p class="small text-muted">La consegna riguarda tutte le {{ voucher_request.quantity }} unità della richiesta.</p>
+          <form method="post" action="{% url 'admin_request_deliver' voucher_request.pk %}" novalidate>
+            {% csrf_token %}
+            {% include "welfare/partials/form_fields.html" with form=delivery_form %}
+            <button type="submit" class="btn btn-primary w-100">Registra consegna</button>
+          </form>
+        </div>
+      </div>
+    {% else %}
+      <div class="alert alert-secondary">Nessuna azione disponibile per questa richiesta.</div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

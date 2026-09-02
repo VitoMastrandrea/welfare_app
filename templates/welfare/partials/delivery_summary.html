@@ -1,0 +1,13 @@
+{% load welfare_extras %}
+{% if allocation %}
+  <div class="alert {% if exceeds %}alert-danger{% else %}alert-secondary{% endif %} mb-0">
+    <div class="d-flex justify-content-between"><span>Voucher</span><strong>{{ allocation.voucher_type.convention.name }} — {{ allocation.voucher_type.name }}</strong></div>
+    <div class="d-flex justify-content-between"><span>Valore unitario</span><strong>€ {{ allocation.voucher_type.unit_value|euro }}</strong></div>
+    <div class="d-flex justify-content-between"><span>Disponibili</span><strong>{{ available }}</strong></div>
+    <hr class="my-2">
+    <div class="d-flex justify-content-between"><span>Valore della consegna</span><strong>€ {{ total_value|euro }}</strong></div>
+    {% if exceeds %}<div class="small mt-2">Quantità superiore alla disponibilità: la consegna verrà rifiutata.</div>{% endif %}
+  </div>
+{% else %}
+  <div class="alert alert-secondary mb-0">Seleziona un voucher per vedere la disponibilità.</div>
+{% endif %}

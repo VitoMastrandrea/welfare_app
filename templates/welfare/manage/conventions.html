@@ -1,0 +1,50 @@
+{% extends "welfare/base.html" %}{% load welfare_extras %}
+{% block title %}Convenzioni{% endblock %}
+{% block page_title %}Convenzioni e tipi voucher{% endblock %}
+{% block page_actions %}
+  <a class="btn btn-outline-primary" href="{% url 'admin_convention_create' %}">Nuova convenzione</a>
+  <a class="btn btn-primary" href="{% url 'admin_voucher_type_create' %}">Nuovo tipo voucher</a>
+{% endblock %}
+{% block content %}
+{% include "welfare/manage/_nav.html" with active='conventions' %}
+{% for convention in conventions %}
+  <div class="card mb-3">
+    <div class="card-header d-flex justify-content-between align-items-center">
+      <div>
+        <span class="fw-semibold">{{ convention.name }}</span>
+        {% if convention.active %}<span class="badge text-bg-success ms-1">Attiva</span>
+        {% else %}<span class="badge text-bg-secondary ms-1">Disattivata</span>{% endif %}
+      </div>
+      <div class="d-flex gap-2">
+        <a class="btn btn-sm btn-outline-secondary" href="{% url 'admin_convention_edit' convention.pk %}">Modifica</a>
+        <a class="btn btn-sm btn-outline-primary" href="{% url 'admin_voucher_type_create' %}?convenzione={{ convention.pk }}">Aggiungi tipo voucher</a>
+      </div>
+    </div>
+    <div class="table-responsive">
+      <table class="table table-sm align-middle mb-0">
+        <thead><tr><th>Tipo voucher</th><th>Descrizione</th><th class="text-end">Valore unitario</th><th>Stato</th><th></th></tr></thead>
+        <tbody>
+        {% for voucher_type in convention.voucher_types.all %}
+          <tr>
+            <td>{{ voucher_type.name }}</td>
+            <td class="small text-muted">{{ voucher_type.description|default:"—" }}</td>
+            <td class="text-end">€ {{ voucher_type.unit_value|euro }}</td>
+            <td>
+              {% if voucher_type.active %}<span class="badge text-bg-success">Attivo</span>
+              {% else %}<span class="badge text-bg-secondary">Disattivato</span>{% endif %}
+              {% if voucher_type.is_used %}<span class="badge text-bg-light border text-muted">Già allocato</span>{% endif %}
+            </td>
+            <td class="text-end"><a class="btn btn-sm btn-outline-secondary" href="{% url 'admin_voucher_type_edit' voucher_type.pk %}">Modifica</a></td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="5" class="text-muted">Nessun tipo voucher.</td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+{% empty %}
+  <div class="alert alert-secondary">Nessuna convenzione registrata.</div>
+{% endfor %}
+<p class="form-text">Convenzioni e tipi voucher usati nello storico non vengono eliminati: disattivali per non renderli più assegnabili.</p>
+{% endblock %}

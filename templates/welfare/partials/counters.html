@@ -1,0 +1,8 @@
+{% load welfare_extras %}
+<div class="counter-grid">
+  <div><span class="counter-label">Assegnati</span><span class="counter-value">{{ allocation.quantity_assigned }}</span></div>
+  <div><span class="counter-label">Disponibili</span><span class="counter-value text-success">{{ allocation.quantity_available }}</span></div>
+  <div><span class="counter-label">In attesa</span><span class="counter-value">{{ allocation.quantity_pending }}</span></div>
+  <div><span class="counter-label">Da consegnare</span><span class="counter-value">{{ allocation.quantity_approved_waiting_delivery }}</span></div>
+  <div><span class="counter-label">Consegnati</span><span class="counter-value">{{ allocation.quantity_delivered }}</span></div>
+</div>

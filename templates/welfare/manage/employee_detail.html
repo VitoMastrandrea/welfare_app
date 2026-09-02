@@ -1,0 +1,90 @@
+{% extends "welfare/base.html" %}{% load welfare_extras %}
+{% block title %}{{ employee.display_name }}{% endblock %}
+{% block page_title %}{{ employee.display_name }}{% endblock %}
+{% block page_actions %}
+  <a class="btn btn-outline-secondary" href="{% url 'admin_employees' %}">Torna all'elenco</a>
+{% endblock %}
+{% block content %}
+{% include "welfare/manage/_nav.html" with active='employees' %}
+{% if not program %}
+  <div class="alert alert-warning">Nessun programma welfare attivo.</div>
+{% else %}
+  <div class="row g-3 mb-3">
+    <div class="col-6 col-lg-3"><div class="card stat-card h-100"><div class="card-body">
+      <span class="stat-label">Budget assegnato</span><div class="stat-value">€ {{ summary.budget_assigned|euro }}</div></div></div></div>
+    <div class="col-6 col-lg-3"><div class="card stat-card h-100"><div class="card-body">
+      <span class="stat-label">Allocato in voucher</span><div class="stat-value">€ {{ summary.budget_allocated|euro }}</div></div></div></div>
+    <div class="col-6 col-lg-3"><div class="card stat-card h-100"><div class="card-body">
+      <span class="stat-label">Non ancora allocato</span><div class="stat-value">€ {{ summary.budget_unallocated|euro }}</div></div></div></div>
+    <div class="col-6 col-lg-3"><div class="card stat-card h-100"><div class="card-body">
+      <span class="stat-label">Voucher consegnati</span><div class="stat-value">€ {{ summary.delivered_value|euro }}</div></div></div></div>
+  </div>
+
+  <div class="d-flex flex-wrap gap-2 mb-4">
+    <a class="btn btn-primary" href="{% url 'admin_employee_budget' employee.pk %}">{% if has_budget %}Modifica budget{% else %}Imposta budget{% endif %}</a>
+    <a class="btn btn-outline-primary" href="{% url 'admin_allocate_employee' employee.pk %}">Assegna voucher</a>
+    <a class="btn btn-outline-primary" href="{% url 'admin_direct_delivery' employee.pk %}">Registra consegna diretta</a>
+  </div>
+
+  <div class="card mb-4">
+    <div class="card-header fw-semibold">Voucher assegnati</div>
+    <div class="table-responsive">
+      <table class="table align-middle mb-0">
+        <thead><tr>
+          <th>Voucher</th><th class="text-end">Valore unitario</th><th class="text-end">Assegnati</th>
+          <th class="text-end">In attesa</th><th class="text-end">Da consegnare</th><th class="text-end">Consegnati</th>
+          <th class="text-end">Disponibili</th><th class="text-end">Valore allocato</th>
+        </tr></thead>
+        <tbody>
+        {% for allocation in allocations %}
+          <tr>
+            <td>{{ allocation.voucher_type.convention.name }} — {{ allocation.voucher_type.name }}</td>
+            <td class="text-end">€ {{ allocation.voucher_type.unit_value|euro }}</td>
+            <td class="text-end">{{ allocation.quantity_assigned }}</td>
+            <td class="text-end">{{ allocation.quantity_pending }}</td>
+            <td class="text-end">{{ allocation.quantity_approved_waiting_delivery }}</td>
+            <td class="text-end">{{ allocation.quantity_delivered }}</td>
+            <td class="text-end fw-semibold">{{ allocation.quantity_available }}</td>
+            <td class="text-end">€ {{ allocation.allocated_value|euro }}</td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="8" class="text-muted">Nessun voucher assegnato.</td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header fw-semibold">Storico richieste e consegne</div>
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead><tr><th>Data</th><th>Voucher</th><th class="text-end">Quantità</th><th class="text-end">Valore</th><th>Stato</th><th></th></tr></thead>
+        <tbody>
+        {% for event in events %}
+          <tr>
+            <td class="text-nowrap">{{ event.date|date:"d/m/Y" }}</td>
+            <td>{{ event.voucher_type.convention.name }} — {{ event.voucher_type.name }}</td>
+            <td class="text-end">{{ event.quantity }}</td>
+            <td class="text-end">€ {{ event.value|euro }}</td>
+            <td>
+              {% if event.kind == 'direct_delivery' %}
+                <span class="badge text-bg-secondary">Consegna diretta</span>
+                <div class="small text-muted">da {{ event.delivery.delivered_by|default:"—" }}</div>
+              {% else %}
+                <span class="badge text-bg-{{ event.request.status_css }}">{{ event.request.status_label }}</span>
+              {% endif %}
+            </td>
+            <td class="text-end">
+              {% if event.request %}<a class="btn btn-sm btn-outline-secondary" href="{% url 'admin_request_detail' event.request.pk %}">Apri</a>{% endif %}
+            </td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="6" class="text-muted">Nessun movimento.</td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,16 @@
+{% extends "welfare/base.html" %}
+{% block title %}{% if instance %}Modifica programma{% else %}Nuovo programma{% endif %}{% endblock %}
+{% block page_title %}{% if instance %}Modifica programma welfare{% else %}Nuovo programma welfare{% endif %}{% endblock %}
+{% block content %}
+{% include "welfare/manage/_nav.html" with active='programs' %}
+<div class="row"><div class="col-lg-6"><div class="card"><div class="card-body">
+  <form method="post" novalidate>
+    {% csrf_token %}
+    {% include "welfare/partials/form_fields.html" %}
+    <div class="d-flex gap-2">
+      <button type="submit" class="btn btn-primary">Salva</button>
+      <a class="btn btn-outline-secondary" href="{% url 'admin_programs' %}">Annulla</a>
+    </div>
+  </form>
+</div></div></div></div>
+{% endblock %}

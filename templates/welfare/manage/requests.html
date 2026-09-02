@@ -1,0 +1,35 @@
+{% extends "welfare/base.html" %}{% load welfare_extras %}
+{% block title %}Richieste voucher{% endblock %}
+{% block page_title %}Richieste voucher{% endblock %}
+{% block content %}
+{% include "welfare/manage/_nav.html" with active='requests' %}
+<ul class="nav nav-tabs mb-3">
+  <li class="nav-item"><a class="nav-link {% if status == 'PENDING' %}active{% endif %}" href="?stato=PENDING">In attesa <span class="badge text-bg-warning text-dark">{{ counts.pending }}</span></a></li>
+  <li class="nav-item"><a class="nav-link {% if status == 'TO_DELIVER' %}active{% endif %}" href="?stato=TO_DELIVER">Da consegnare <span class="badge text-bg-primary">{{ counts.to_deliver }}</span></a></li>
+  <li class="nav-item"><a class="nav-link {% if status == 'DELIVERED' %}active{% endif %}" href="?stato=DELIVERED">Consegnate</a></li>
+  <li class="nav-item"><a class="nav-link {% if status == 'REJECTED' %}active{% endif %}" href="?stato=REJECTED">Rifiutate <span class="badge text-bg-danger">{{ counts.rejected }}</span></a></li>
+  <li class="nav-item"><a class="nav-link {% if status == 'ALL' %}active{% endif %}" href="?stato=ALL">Tutte</a></li>
+</ul>
+<div class="card">
+  <div class="table-responsive">
+    <table class="table table-hover align-middle mb-0">
+      <thead><tr><th>Data</th><th>Dipendente</th><th>Voucher</th><th class="text-end">Quantità</th><th class="text-end">Valore</th><th>Stato</th><th></th></tr></thead>
+      <tbody>
+      {% for req in requests %}
+        <tr>
+          <td class="text-nowrap">{{ req.requested_at|date:"d/m/Y" }}</td>
+          <td>{{ req.allocation.employee.display_name }}</td>
+          <td>{{ req.allocation.voucher_type.convention.name }} — {{ req.allocation.voucher_type.name }}</td>
+          <td class="text-end">{{ req.quantity }}</td>
+          <td class="text-end">€ {{ req.total_value|euro }}</td>
+          <td><span class="badge text-bg-{{ req.status_css }}">{{ req.status_label }}</span></td>
+          <td class="text-end"><a class="btn btn-sm btn-outline-primary" href="{% url 'admin_request_detail' req.pk %}">Apri</a></td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="7" class="text-muted">Nessuna richiesta in questa vista.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

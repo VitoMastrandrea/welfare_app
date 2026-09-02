@@ -1,0 +1,22 @@
+{% extends "welfare/base.html" %}
+{% block title %}{% if instance %}Modifica tipo voucher{% else %}Nuovo tipo voucher{% endif %}{% endblock %}
+{% block page_title %}{% if instance %}Modifica tipo voucher{% else %}Nuovo tipo voucher{% endif %}{% endblock %}
+{% block content %}
+{% include "welfare/manage/_nav.html" with active='conventions' %}
+<div class="row"><div class="col-lg-6"><div class="card"><div class="card-body">
+  {% if instance and instance.is_used %}
+    <div class="alert alert-warning">
+      Questo tipo voucher è già stato allocato: il valore unitario non è modificabile.
+      Per un taglio differente crea un nuovo tipo voucher.
+    </div>
+  {% endif %}
+  <form method="post" novalidate>
+    {% csrf_token %}
+    {% include "welfare/partials/form_fields.html" %}
+    <div class="d-flex gap-2">
+      <button type="submit" class="btn btn-primary">Salva</button>
+      <a class="btn btn-outline-secondary" href="{% url 'admin_conventions' %}">Annulla</a>
+    </div>
+  </form>
+</div></div></div></div>
+{% endblock %}

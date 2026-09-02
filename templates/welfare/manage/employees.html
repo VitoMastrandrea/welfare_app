@@ -1,0 +1,39 @@
+{% extends "welfare/base.html" %}{% load welfare_extras %}
+{% block title %}Dipendenti e budget{% endblock %}
+{% block page_title %}Dipendenti e budget{% endblock %}
+{% block page_actions %}<a class="btn btn-primary" href="{% url 'admin_allocate' %}">Assegna voucher</a>{% endblock %}
+{% block content %}
+{% include "welfare/manage/_nav.html" with active='employees' %}
+<form method="get" class="row g-2 mb-3">
+  <div class="col-sm-6 col-lg-4">
+    <input type="search" name="q" value="{{ q }}" class="form-control" placeholder="Cerca dipendente...">
+  </div>
+  <div class="col-auto"><button class="btn btn-outline-secondary" type="submit">Cerca</button></div>
+</form>
+<div class="card">
+  <div class="table-responsive">
+    <table class="table table-hover align-middle mb-0">
+      <thead><tr><th>Dipendente</th><th>Matricola</th><th class="text-end">Budget</th><th class="text-end">Allocato</th><th class="text-end">Non allocato</th><th></th></tr></thead>
+      <tbody>
+      {% for row in rows %}
+        <tr>
+          <td>
+            {{ row.employee.display_name }}
+            {% if not row.employee.active %}<span class="badge text-bg-secondary ms-1">Non attivo</span>{% endif %}
+            <div class="small text-muted">{{ row.employee.user.email|default:row.employee.user.username }}</div>
+          </td>
+          <td>{{ row.employee.employee_code|default:"—" }}</td>
+          <td class="text-end">{% if row.summary %}€ {{ row.summary.budget_assigned|euro }}{% else %}—{% endif %}</td>
+          <td class="text-end">{% if row.summary %}€ {{ row.summary.budget_allocated|euro }}{% else %}—{% endif %}</td>
+          <td class="text-end">{% if row.summary %}€ {{ row.summary.budget_unallocated|euro }}{% else %}—{% endif %}</td>
+          <td class="text-end"><a class="btn btn-sm btn-outline-primary" href="{% url 'admin_employee_detail' row.employee.pk %}">Apri</a></td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="6" class="text-muted">Nessun dipendente trovato.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+<p class="form-text mt-2">Nuovi dipendenti e utenti si creano dal <a href="/django-admin/">pannello Django</a>.</p>
+{% endblock %}

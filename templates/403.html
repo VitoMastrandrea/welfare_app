@@ -1,0 +1,7 @@
+{% extends "welfare/base.html" %}
+{% block title %}Accesso negato{% endblock %}
+{% block page_title %}Accesso negato{% endblock %}
+{% block content %}
+<div class="alert alert-danger">Non hai i permessi necessari per accedere a questa pagina.</div>
+<a class="btn btn-outline-secondary" href="{% url 'dashboard' %}">Torna alla home</a>
+{% endblock %}

@@ -1,0 +1,103 @@
+{% extends "welfare/base.html" %}{% load welfare_extras %}
+{% block title %}La mia situazione welfare{% endblock %}
+{% block page_title %}La mia situazione welfare{% endblock %}
+{% block content %}
+{% if not program %}
+  <div class="alert alert-info">Non è attivo alcun programma welfare al momento.</div>
+{% else %}
+  <p class="text-muted">Programma attivo: <strong>{{ program.name }}</strong>
+    {% if program.start_date or program.end_date %}
+      <span class="small">({{ program.start_date|date:"d/m/Y"|default:"—" }} → {{ program.end_date|date:"d/m/Y"|default:"—" }})</span>
+    {% endif %}
+  </p>
+
+  <div class="row g-3 mb-4">
+    <div class="col-6 col-lg-3">
+      <div class="card stat-card h-100"><div class="card-body">
+        <span class="stat-label">Budget assegnato</span>
+        <div class="stat-value">€ {{ summary.budget_assigned|euro }}</div>
+      </div></div>
+    </div>
+    <div class="col-6 col-lg-3">
+      <div class="card stat-card h-100"><div class="card-body">
+        <span class="stat-label">Allocato in voucher</span>
+        <div class="stat-value">€ {{ summary.budget_allocated|euro }}</div>
+      </div></div>
+    </div>
+    <div class="col-6 col-lg-3">
+      <div class="card stat-card h-100"><div class="card-body">
+        <span class="stat-label">Non ancora allocato</span>
+        <div class="stat-value">€ {{ summary.budget_unallocated|euro }}</div>
+        <div class="small text-muted">Importo non ancora convertito in voucher dall'amministrazione.</div>
+      </div></div>
+    </div>
+    <div class="col-6 col-lg-3">
+      <div class="card stat-card h-100"><div class="card-body">
+        <span class="stat-label">Voucher consegnati</span>
+        <div class="stat-value">€ {{ summary.delivered_value|euro }}</div>
+      </div></div>
+    </div>
+  </div>
+
+  <div class="row g-3">
+    <div class="col-lg-7">
+      <div class="card h-100">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <span class="fw-semibold">I miei voucher</span>
+          <a class="btn btn-sm btn-outline-primary" href="{% url 'my_vouchers' %}">Vedi tutti</a>
+        </div>
+        <div class="list-group list-group-flush">
+          {% for allocation in allocations %}
+            <div class="list-group-item">
+              <div class="d-flex justify-content-between align-items-start gap-2">
+                <div>
+                  <div class="fw-semibold">{{ allocation.voucher_type.convention.name }}</div>
+                  <div>{{ allocation.voucher_type.name }} — € {{ allocation.voucher_type.unit_value|euro }} per voucher</div>
+                </div>
+                <div class="text-end">
+                  <span class="badge text-bg-success">Disponibili: {{ allocation.quantity_available }}</span>
+                  <div class="small text-muted">Assegnati: {{ allocation.quantity_assigned }}</div>
+                </div>
+              </div>
+            </div>
+          {% empty %}
+            <div class="list-group-item text-muted">Nessun voucher assegnato al momento.</div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-5">
+      <div class="card h-100">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <span class="fw-semibold">Ultimi movimenti</span>
+          <a class="btn btn-sm btn-outline-primary" href="{% url 'my_requests' %}">Storico</a>
+        </div>
+        <div class="card-body">
+          <p class="small mb-3">
+            Richieste in attesa: <span class="badge text-bg-warning text-dark">{{ pending_count }}</span>
+            &nbsp;Approvate da consegnare: <span class="badge text-bg-primary">{{ to_deliver_count }}</span>
+          </p>
+          <ul class="list-unstyled mb-0 small">
+            {% for event in recent_events %}
+              <li class="border-bottom py-2">
+                <div class="text-muted">{{ event.date|date:"d/m/Y" }}</div>
+                <div>{{ event.voucher_type.convention.name }} — {{ event.voucher_type.name }} × {{ event.quantity }}</div>
+                <div>
+                  {% if event.kind == 'direct_delivery' %}
+                    <span class="badge text-bg-secondary">Consegna diretta</span>
+                  {% else %}
+                    <span class="badge text-bg-{{ event.request.status_css }}">{{ event.request.status_label }}</span>
+                  {% endif %}
+                  <span class="text-muted">€ {{ event.value|euro }}</span>
+                </div>
+              </li>
+            {% empty %}
+              <li class="text-muted">Nessun movimento registrato.</li>
+            {% endfor %}
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endif %}
+{% endblock %}

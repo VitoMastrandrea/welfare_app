@@ -1,0 +1,30 @@
+{% extends "welfare/base.html" %}{% load welfare_extras %}
+{% block title %}Assegna voucher{% endblock %}
+{% block page_title %}Assegna voucher{% if employee %} a {{ employee.display_name }}{% endif %}{% endblock %}
+{% block content %}
+{% include "welfare/manage/_nav.html" with active='allocations' %}
+<div class="row g-4">
+  <div class="col-lg-6">
+    <div class="card"><div class="card-body">
+      <form method="post" novalidate>
+        {% csrf_token %}
+        {% if employee %}<input type="hidden" name="employee" value="{{ employee.pk }}">{% endif %}
+        {% include "welfare/partials/form_fields.html" %}
+        <div class="d-flex gap-2">
+          <button type="submit" class="btn btn-primary">Salva assegnazione</button>
+          <a class="btn btn-outline-secondary" href="{% if employee %}{% url 'admin_employee_detail' employee.pk %}{% else %}{% url 'admin_allocations' %}{% endif %}">Annulla</a>
+        </div>
+        <p class="form-text mt-2">
+          La quantità indicata è la quantità <strong>complessiva</strong> assegnata per quel tipo voucher.
+          Il valore totale delle allocazioni non può superare il budget del dipendente.
+        </p>
+      </form>
+    </div></div>
+  </div>
+  <div class="col-lg-6">
+    <div id="riepilogo-allocazione">
+      {% include "welfare/partials/allocation_summary.html" with employee=None voucher_type=None %}
+    </div>
+  </div>
+</div>
+{% endblock %}

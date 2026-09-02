@@ -1,0 +1,49 @@
+{% extends "welfare/base.html" %}{% load welfare_extras %}
+{% block title %}Convenzioni{% endblock %}
+{% block page_title %}Convenzioni e voucher disponibili{% endblock %}
+{% block content %}
+<div class="alert alert-info">
+  Questo catalogo mostra le convenzioni attive e i tipi di voucher previsti dal programma welfare.
+  Puoi inviare una richiesta solo per i voucher che l'amministrazione ti ha assegnato.
+</div>
+{% for convention in conventions %}
+  <div class="card mb-3">
+    <div class="card-header">
+      <span class="fw-semibold">{{ convention.name }}</span>
+    </div>
+    <div class="card-body">
+      {% if convention.description %}<p class="text-muted">{{ convention.description }}</p>{% endif %}
+      <div class="table-responsive">
+        <table class="table table-sm align-middle mb-0">
+          <thead><tr><th>Tipo voucher</th><th>Descrizione</th><th class="text-end">Valore unitario</th><th class="text-end">La tua situazione</th></tr></thead>
+          <tbody>
+          {% for voucher_type in convention.voucher_types.all %}
+            {% with allocation=allocations|get_item:voucher_type.pk %}
+            <tr>
+              <td>{{ voucher_type.name }}</td>
+              <td class="small text-muted">{{ voucher_type.description|default:"—" }}</td>
+              <td class="text-end">€ {{ voucher_type.unit_value|euro }}</td>
+              <td class="text-end">
+                {% if allocation %}
+                  <span class="badge text-bg-success">Disponibili: {{ allocation.quantity_available }}</span>
+                  {% if allocation.quantity_available > 0 %}
+                    <a class="btn btn-sm btn-primary ms-1" href="{% url 'request_voucher' allocation.pk %}">Richiedi</a>
+                  {% endif %}
+                {% else %}
+                  <span class="badge text-bg-light border text-muted">Non assegnato</span>
+                {% endif %}
+              </td>
+            </tr>
+            {% endwith %}
+          {% empty %}
+            <tr><td colspan="4" class="text-muted">Nessun voucher attivo per questa convenzione.</td></tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+{% empty %}
+  <div class="alert alert-secondary">Nessuna convenzione attiva.</div>
+{% endfor %}
+{% endblock %}

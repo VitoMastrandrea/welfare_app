@@ -1,0 +1,76 @@
+{% load static %}<!doctype html>
+<html lang="it" data-bs-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Welfare aziendale{% endblock %}</title>
+  <link rel="stylesheet" href="{% static 'vendor/bootstrap/css/bootstrap.min.css' %}">
+  <link rel="stylesheet" href="{% static 'css/app.css' %}">
+  <script src="{% static 'vendor/htmx/htmx.min.js' %}" defer></script>
+</head>
+<body class="bg-body-tertiary d-flex flex-column min-vh-100">
+<nav class="navbar navbar-expand-lg bg-white border-bottom">
+  <div class="container">
+    <a class="navbar-brand fw-semibold" href="{% url 'dashboard' %}">Welfare aziendale</a>
+    {% if user.is_authenticated %}
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar-main"
+              aria-controls="navbar-main" aria-expanded="false" aria-label="Apri il menu">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbar-main">
+        <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+          {% if employee_profile %}
+            <li class="nav-item"><a class="nav-link" href="{% url 'dashboard' %}">La mia situazione</a></li>
+            <li class="nav-item"><a class="nav-link" href="{% url 'my_vouchers' %}">I miei voucher</a></li>
+            <li class="nav-item"><a class="nav-link" href="{% url 'my_requests' %}">Le mie richieste</a></li>
+            <li class="nav-item"><a class="nav-link" href="{% url 'catalog' %}">Convenzioni</a></li>
+          {% endif %}
+          {% if is_welfare_manager %}
+            <li class="nav-item"><a class="nav-link fw-semibold text-primary" href="{% url 'admin_dashboard' %}">Amministrazione welfare</a></li>
+          {% endif %}
+        </ul>
+        <ul class="navbar-nav align-items-lg-center">
+          <li class="nav-item"><span class="navbar-text small">{{ user.get_full_name|default:user.username }}</span></li>
+          <li class="nav-item"><a class="nav-link" href="{% url 'password_change' %}">Password</a></li>
+          <li class="nav-item">
+            <form method="post" action="{% url 'logout' %}" class="d-inline">
+              {% csrf_token %}
+              <button type="submit" class="btn btn-sm btn-outline-secondary ms-lg-2">Esci</button>
+            </form>
+          </li>
+        </ul>
+      </div>
+    {% endif %}
+  </div>
+</nav>
+
+<main class="container py-4 flex-grow-1">
+  {% if messages %}
+    {% for message in messages %}
+      <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show" role="alert">
+        {{ message }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Chiudi"></button>
+      </div>
+    {% endfor %}
+  {% endif %}
+
+  {% block breadcrumb %}{% endblock %}
+
+  <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+    <h1 class="h4 mb-0">{% block page_title %}{% endblock %}</h1>
+    <div>{% block page_actions %}{% endblock %}</div>
+  </div>
+
+  {% block content %}{% endblock %}
+</main>
+
+<footer class="border-top bg-white py-3 mt-auto">
+  <div class="container small text-muted d-flex justify-content-between flex-wrap gap-2">
+    <span>Piattaforma welfare aziendale</span>
+    {% if program %}<span>{{ program.name }}</span>{% endif %}
+  </div>
+</footer>
+
+<script src="{% static 'vendor/bootstrap/js/bootstrap.bundle.min.js' %}"></script>
+</body>
+</html>

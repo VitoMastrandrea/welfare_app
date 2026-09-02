@@ -1,0 +1,11 @@
+/* Stile sobrio per uno strumento aziendale interno. */
+body { font-size: 0.95rem; }
+.card { border-color: rgba(0,0,0,.08); }
+.stat-card .stat-value { font-size: 1.5rem; font-weight: 600; }
+.stat-card .stat-label { font-size: .8rem; text-transform: uppercase; letter-spacing: .03em; color: #6c757d; }
+.table td, .table th { vertical-align: middle; }
+.counter-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: .5rem; }
+.counter-grid div { background: #f8f9fa; border-radius: .375rem; padding: .5rem .75rem; }
+.counter-grid .counter-label { font-size: .75rem; color: #6c757d; display: block; }
+.counter-grid .counter-value { font-weight: 600; }
+.htmx-request .htmx-indicator { display: inline; }

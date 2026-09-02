@@ -1,0 +1,35 @@
+{% extends "welfare/base.html" %}{% load welfare_extras %}
+{% block title %}Allocazioni{% endblock %}
+{% block page_title %}Allocazioni voucher{% endblock %}
+{% block page_actions %}<a class="btn btn-primary" href="{% url 'admin_allocate' %}">Assegna voucher</a>{% endblock %}
+{% block content %}
+{% include "welfare/manage/_nav.html" with active='allocations' %}
+<div class="card">
+  <div class="table-responsive">
+    <table class="table table-hover align-middle mb-0">
+      <thead><tr>
+        <th>Dipendente</th><th>Voucher</th><th class="text-end">Valore unitario</th><th class="text-end">Assegnati</th>
+        <th class="text-end">In attesa</th><th class="text-end">Da consegnare</th><th class="text-end">Consegnati</th>
+        <th class="text-end">Disponibili</th><th></th>
+      </tr></thead>
+      <tbody>
+      {% for allocation in allocations %}
+        <tr>
+          <td>{{ allocation.employee.display_name }}</td>
+          <td>{{ allocation.voucher_type.convention.name }} — {{ allocation.voucher_type.name }}</td>
+          <td class="text-end">€ {{ allocation.voucher_type.unit_value|euro }}</td>
+          <td class="text-end">{{ allocation.quantity_assigned }}</td>
+          <td class="text-end">{{ allocation.quantity_pending }}</td>
+          <td class="text-end">{{ allocation.quantity_approved_waiting_delivery }}</td>
+          <td class="text-end">{{ allocation.quantity_delivered }}</td>
+          <td class="text-end fw-semibold">{{ allocation.quantity_available }}</td>
+          <td class="text-end"><a class="btn btn-sm btn-outline-secondary" href="{% url 'admin_employee_detail' allocation.employee.pk %}">Dipendente</a></td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="9" class="text-muted">Nessuna allocazione registrata.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

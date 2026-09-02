@@ -1,0 +1,38 @@
+{% extends "welfare/base.html" %}{% load welfare_extras %}
+{% block title %}Budget di {{ employee.display_name }}{% endblock %}
+{% block page_title %}Budget di {{ employee.display_name }}{% endblock %}
+{% block content %}
+{% include "welfare/manage/_nav.html" with active='employees' %}
+<div class="row g-4">
+  <div class="col-lg-6">
+    <div class="card"><div class="card-body">
+      <form method="post" novalidate>
+        {% csrf_token %}
+        {% include "welfare/partials/form_fields.html" %}
+        <div class="d-flex gap-2">
+          <button type="submit" class="btn btn-primary">Salva budget</button>
+          <a class="btn btn-outline-secondary" href="{% url 'admin_employee_detail' employee.pk %}">Annulla</a>
+        </div>
+      </form>
+    </div></div>
+  </div>
+  <div class="col-lg-6">
+    <div class="card"><div class="card-body">
+      <h2 class="h6">Situazione attuale</h2>
+      <dl class="row mb-0 small">
+        <dt class="col-7">Programma</dt><dd class="col-5 text-end">{{ program.name }}</dd>
+        <dt class="col-7">Budget assegnato</dt><dd class="col-5 text-end">€ {{ summary.budget_assigned|euro }}</dd>
+        <dt class="col-7">Allocato in voucher</dt><dd class="col-5 text-end">€ {{ summary.budget_allocated|euro }}</dd>
+        <dt class="col-7">Non ancora allocato</dt><dd class="col-5 text-end">€ {{ summary.budget_unallocated|euro }}</dd>
+      </dl>
+      {% if budget %}
+        <hr>
+        <p class="small text-muted mb-0">
+          Creato da {{ budget.created_by|default:"—" }} il {{ budget.created_at|date:"d/m/Y H:i" }}.<br>
+          Ultima modifica di {{ budget.updated_by|default:"—" }} il {{ budget.updated_at|date:"d/m/Y H:i" }}.
+        </p>
+      {% endif %}
+    </div></div>
+  </div>
+</div>
+{% endblock %}
