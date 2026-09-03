@@ -6,6 +6,7 @@ from decimal import Decimal, InvalidOperation
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.models import User
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.db import models
 from django.db.models import Count, Q
@@ -21,6 +22,9 @@ from .forms import (
     EmployeeBudgetForm,
     RejectRequestForm,
     VoucherRequestForm,
+    UserCreateForm,
+    UserPasswordForm,
+    UserUpdateForm,
     VoucherTypeForm,
     WelfareProgramForm,
 )
@@ -36,10 +40,13 @@ from .models import (
     ZERO,
 )
 from .permissions import (
+    WELFARE_MANAGERS_GROUP,
     can_access_request,
+    can_manage_user,
     employee_required,
     get_employee_profile,
     is_welfare_manager,
+    staff_required,
     welfare_manager_required,
 )
 
@@ -77,6 +84,8 @@ def dashboard(request):
     if profile is None or not profile.active:
         if is_welfare_manager(request.user):
             return redirect("admin_dashboard")
+        if request.user.is_staff:
+            return redirect("admin_users")
         return render(request, "welfare/no_profile.html", status=403)
 
     program = _current_program()
@@ -768,3 +777,153 @@ def admin_program_form(request, pk: int | None = None):
         "welfare/manage/program_form.html",
         {"form": form, "instance": instance},
     )
+
+
+# ---------------------------------------------------------------------------
+# Gestione utenti (riservata allo staff)
+# ---------------------------------------------------------------------------
+@staff_required
+def admin_users(request):
+    query = (request.GET.get("q") or "").strip()
+    users = (
+        User.objects.all()
+        .prefetch_related("groups")
+        .select_related("employee_profile")
+        .order_by("last_name", "first_name", "username")
+    )
+    if query:
+        users = users.filter(
+            Q(username__icontains=query)
+            | Q(first_name__icontains=query)
+            | Q(last_name__icontains=query)
+            | Q(email__icontains=query)
+        )
+    rows = [
+        {
+            "user": item,
+            "is_manager": any(g.name == WELFARE_MANAGERS_GROUP for g in item.groups.all()),
+            "profile": getattr(item, "employee_profile", None),
+            "editable": can_manage_user(request.user, item),
+        }
+        for item in users
+    ]
+    return render(request, "welfare/manage/users.html", {"rows": rows, "q": query})
+
+
+def _user_or_404(pk: int) -> User:
+    return get_object_or_404(User, pk=pk)
+
+
+@staff_required
+def admin_user_create(request):
+    if request.method == "POST":
+        form = UserCreateForm(request.POST, actor=request.user)
+        if form.is_valid():
+            data = form.cleaned_data
+            try:
+                created = services.create_user_account(
+                    actor=request.user,
+                    username=data["username"],
+                    password=data["password1"],
+                    first_name=data.get("first_name", ""),
+                    last_name=data.get("last_name", ""),
+                    email=data.get("email", ""),
+                    is_active=data.get("is_active", True),
+                    is_staff=data.get("is_staff", False),
+                    is_superuser=data.get("is_superuser", False),
+                    welfare_manager=data.get("is_welfare_manager", False),
+                    employee_profile=data.get("has_employee_profile", False),
+                    employee_code=data.get("employee_code", ""),
+                )
+            except ValidationError as exc:
+                _add_form_errors(request, exc)
+            else:
+                messages.success(request, f"Utente «{created.username}» creato.")
+                return redirect("admin_users")
+    else:
+        form = UserCreateForm(actor=request.user)
+    return render(
+        request, "welfare/manage/user_form.html", {"form": form, "target_user": None}
+    )
+
+
+@staff_required
+def admin_user_edit(request, pk: int):
+    target = _user_or_404(pk)
+    if not can_manage_user(request.user, target):
+        raise PermissionDenied("Non puoi modificare questo utente.")
+
+    if request.method == "POST":
+        form = UserUpdateForm(request.POST, instance=target, actor=request.user)
+        if form.is_valid():
+            data = form.cleaned_data
+            try:
+                services.update_user_account(
+                    actor=request.user,
+                    user=target,
+                    username=data["username"],
+                    first_name=data.get("first_name", ""),
+                    last_name=data.get("last_name", ""),
+                    email=data.get("email", ""),
+                    is_active=data.get("is_active", True),
+                    is_staff=data.get("is_staff", False),
+                    is_superuser=data.get("is_superuser") if request.user.is_superuser else None,
+                    welfare_manager=data.get("is_welfare_manager", False),
+                    employee_profile=data.get("has_employee_profile", False),
+                    employee_code=data.get("employee_code", ""),
+                )
+            except ValidationError as exc:
+                _add_form_errors(request, exc)
+            else:
+                messages.success(request, f"Utente «{target.username}» aggiornato.")
+                return redirect("admin_users")
+    else:
+        form = UserUpdateForm(instance=target, actor=request.user)
+    return render(
+        request, "welfare/manage/user_form.html", {"form": form, "target_user": target}
+    )
+
+
+@staff_required
+def admin_user_password(request, pk: int):
+    target = _user_or_404(pk)
+    if not can_manage_user(request.user, target):
+        raise PermissionDenied("Non puoi modificare la password di questo utente.")
+
+    if request.method == "POST":
+        form = UserPasswordForm(request.POST, user=target)
+        if form.is_valid():
+            try:
+                services.set_user_password(
+                    actor=request.user, user=target, password=form.cleaned_data["password1"]
+                )
+            except ValidationError as exc:
+                _add_form_errors(request, exc)
+            else:
+                messages.success(
+                    request, f"Password di «{target.username}» aggiornata."
+                )
+                return redirect("admin_users")
+    else:
+        form = UserPasswordForm(user=target)
+    return render(
+        request,
+        "welfare/manage/user_password_form.html",
+        {"form": form, "target_user": target},
+    )
+
+
+@staff_required
+def admin_user_toggle_active(request, pk: int):
+    if request.method != "POST":
+        return HttpResponse(status=405)
+    target = _user_or_404(pk)
+    active = request.POST.get("active") == "1"
+    try:
+        services.set_user_active(actor=request.user, user=target, active=active)
+    except ValidationError as exc:
+        _add_form_errors(request, exc)
+    else:
+        stato = "riattivato" if active else "disattivato"
+        messages.success(request, f"Account «{target.username}» {stato}.")
+    return redirect("admin_users")

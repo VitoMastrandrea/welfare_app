@@ -90,6 +90,23 @@ urlpatterns = [
         views.admin_voucher_type_form,
         name="admin_voucher_type_edit",
     ),
+    path("amministrazione/utenti/", views.admin_users, name="admin_users"),
+    path("amministrazione/utenti/nuovo/", views.admin_user_create, name="admin_user_create"),
+    path(
+        "amministrazione/utenti/<int:pk>/modifica/",
+        views.admin_user_edit,
+        name="admin_user_edit",
+    ),
+    path(
+        "amministrazione/utenti/<int:pk>/password/",
+        views.admin_user_password,
+        name="admin_user_password",
+    ),
+    path(
+        "amministrazione/utenti/<int:pk>/stato/",
+        views.admin_user_toggle_active,
+        name="admin_user_toggle_active",
+    ),
     path("amministrazione/programmi/", views.admin_programs, name="admin_programs"),
     path(
         "amministrazione/programmi/nuovo/",

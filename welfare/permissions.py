@@ -20,6 +20,25 @@ def is_welfare_manager(user) -> bool:
     return bool(user and user.is_authenticated and user.has_perm(MANAGE_PERM))
 
 
+def is_staff_member(user) -> bool:
+    """True se l'utente ha privilegi di staff (gestione degli account)."""
+    return bool(user and user.is_authenticated and user.is_staff)
+
+
+def can_manage_user(actor, target) -> bool:
+    """Chi può modificare l'account di un altro utente.
+
+    Serve staff. Un utente staff che non è superuser non può però toccare
+    l'account di un superuser: potrebbe cambiargli la password e prenderne
+    il posto.
+    """
+    if not is_staff_member(actor):
+        return False
+    if target is not None and target.is_superuser and not actor.is_superuser:
+        return False
+    return True
+
+
 def get_employee_profile(user) -> EmployeeProfile | None:
     if not user or not user.is_authenticated:
         return None
@@ -69,6 +88,23 @@ def employee_required(view_func):
     def _wrapped(request, *args, **kwargs):
         profile = require_employee_profile(request.user)
         request.employee_profile = profile
+        return view_func(request, *args, **kwargs)
+
+    return login_required(_wrapped)
+
+
+def staff_required(view_func):
+    """Decoratore: utente autenticato con privilegi di staff."""
+    from functools import wraps
+
+    from django.contrib.auth.decorators import login_required
+
+    @wraps(view_func)
+    def _wrapped(request, *args, **kwargs):
+        if not is_staff_member(request.user):
+            raise PermissionDenied(
+                "La gestione degli utenti è riservata agli utenti con privilegi di staff."
+            )
         return view_func(request, *args, **kwargs)
 
     return login_required(_wrapped)

@@ -46,6 +46,7 @@
   <a class="btn btn-primary" href="{% url 'admin_allocate' %}">Assegna voucher</a>
   <a class="btn btn-outline-primary" href="{% url 'admin_employees' %}">Dipendenti e budget</a>
   <a class="btn btn-outline-primary" href="{% url 'admin_requests' %}?stato=PENDING">Richieste in attesa</a>
+  {% if user.is_staff %}<a class="btn btn-outline-primary" href="{% url 'admin_users' %}">Gestione utenti</a>{% endif %}
 </div>
 
 <div class="card">

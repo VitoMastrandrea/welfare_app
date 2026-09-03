@@ -1,0 +1,45 @@
+{% extends "welfare/base.html" %}
+{% block title %}{% if target_user %}Modifica utente{% else %}Nuovo utente{% endif %}{% endblock %}
+{% block page_title %}{% if target_user %}Modifica «{{ target_user.username }}»{% else %}Nuovo utente{% endif %}{% endblock %}
+{% block content %}
+{% include "welfare/manage/_nav.html" with active='users' %}
+<div class="row g-4">
+  <div class="col-lg-7">
+    <div class="card"><div class="card-body">
+      <form method="post" novalidate>
+        {% csrf_token %}
+        {% include "welfare/partials/form_fields.html" %}
+        <div class="d-flex gap-2">
+          <button type="submit" class="btn btn-primary">Salva</button>
+          <a class="btn btn-outline-secondary" href="{% url 'admin_users' %}">Annulla</a>
+        </div>
+      </form>
+    </div></div>
+  </div>
+  <div class="col-lg-5">
+    <div class="card"><div class="card-body">
+      <h2 class="h6">Cosa comportano le opzioni</h2>
+      <dl class="small mb-0">
+        <dt>Profilo dipendente attivo</dt>
+        <dd>Dà accesso alla propria area welfare: budget, voucher assegnati, richieste. Serve per poter ricevere voucher.</dd>
+        <dt>Welfare Manager</dt>
+        <dd>Aggiunge l'area Amministrazione welfare: budget, allocazioni, richieste, consegne. Si somma al profilo dipendente, non lo sostituisce.</dd>
+        <dt>Privilegi di staff</dt>
+        <dd>Permette di gestire gli utenti da questa sezione.</dd>
+        {% if user.is_superuser %}
+          <dt>Superuser</dt>
+          <dd>Accesso completo, incluso il pannello Django. Assegnalo solo se necessario.</dd>
+        {% endif %}
+      </dl>
+      {% if target_user %}
+        <hr>
+        <p class="small mb-0">
+          La password si cambia dalla
+          <a href="{% url 'admin_user_password' target_user.pk %}">pagina dedicata</a>.
+          {% if target_user.pk == user.pk %}<br>Stai modificando il tuo account: non puoi togliere a te stesso accesso e privilegi.{% endif %}
+        </p>
+      {% endif %}
+    </div></div>
+  </div>
+</div>
+{% endblock %}

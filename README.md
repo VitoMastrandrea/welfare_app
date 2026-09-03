@@ -22,6 +22,7 @@ deciso dall'amministratore welfare.
 - [Cloudflare R2](#cloudflare-r2-allegati-su-bucket-privato)
 - [Deploy su Railway](#deploy-su-railway)
 - [Architettura](#architettura)
+- [Gestione utenti dal frontend](#gestione-utenti-dal-frontend)
 - [Modello dei dati e regole di dominio](#modello-dei-dati-e-regole-di-dominio)
 - [Ruoli e permessi](#ruoli-e-permessi)
 
@@ -375,6 +376,39 @@ Contatori per allocazione:
 available = assigned - pending - approved_waiting_delivery - delivered
 ```
 
+## Gestione utenti dal frontend
+
+Gli utenti con **privilegi di staff** (`is_staff`) trovano in Amministrazione welfare la
+sezione **Utenti**, che evita di dover passare dal Django Admin:
+
+- elenco con ricerca per nome, cognome, email o nome utente;
+- creazione di un account con password, ruoli e — in un solo passaggio — il profilo
+  dipendente con la relativa matricola;
+- modifica dei dati e dei ruoli di un account esistente;
+- impostazione di una nuova password;
+- disattivazione e riattivazione dell'account.
+
+Le tre spunte che definiscono cosa vede l'utente sono indipendenti e cumulabili:
+
+| Opzione | Effetto |
+|---|---|
+| Profilo dipendente attivo | Accesso alla propria area welfare; necessario per ricevere voucher |
+| Welfare Manager | Aggiunge l'area Amministrazione welfare (gruppo `Welfare Managers`) |
+| Privilegi di staff | Permette di gestire gli utenti da questa sezione |
+| Superuser | Accesso completo, incluso il Django Admin. Assegnabile solo da un altro superuser |
+
+Regole di sicurezza applicate lato server:
+
+- la sezione è raggiungibile **solo** dagli utenti staff: un Welfare Manager che non sia
+  staff riceve 403 anche digitando la URL a mano;
+- un utente staff che non è superuser **non può modificare l'account di un superuser**,
+  nemmeno la password: potrebbe altrimenti prenderne il posto;
+- solo un superuser può assegnare o revocare i privilegi di superuser;
+- nessuno può disattivare il proprio account o togliersi da solo i privilegi di staff:
+  eviterebbe di restare chiuso fuori;
+- gli account **non si eliminano**: si disattivano, così budget, richieste e consegne
+  restano nello storico. Disattivare un account disattiva anche il suo profilo dipendente.
+
 ## Ruoli e permessi
 
 Non esiste alcun campo `user_type`: si usano gruppi e permessi Django, perché un
@@ -382,6 +416,8 @@ Welfare Manager può essere contemporaneamente un dipendente (è il caso di Anto
 
 - Gruppo **Welfare Managers** → permesso `welfare.manage_welfare` → accesso all'area
   Amministrazione welfare **in aggiunta** alla propria area dipendente.
+- Flag `is_staff` → in più, gestione degli utenti dal frontend (sezione *Utenti*).
+  È indipendente dal ruolo welfare: un Welfare Manager non è automaticamente staff.
 - Un Welfare Manager può amministrare anche la propria posizione: ogni operazione
   registra comunque attore e timestamp (budget, allocazioni, approvazioni, rifiuti,
   consegne, consegne dirette).

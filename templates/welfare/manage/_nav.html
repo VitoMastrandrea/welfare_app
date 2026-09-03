@@ -6,4 +6,7 @@
   <li class="nav-item"><a class="nav-link {% if active == 'deliveries' %}active{% endif %}" href="{% url 'admin_deliveries' %}">Consegne</a></li>
   <li class="nav-item"><a class="nav-link {% if active == 'conventions' %}active{% endif %}" href="{% url 'admin_conventions' %}">Convenzioni</a></li>
   <li class="nav-item"><a class="nav-link {% if active == 'programs' %}active{% endif %}" href="{% url 'admin_programs' %}">Programmi</a></li>
+  {% if user.is_staff %}
+    <li class="nav-item"><a class="nav-link {% if active == 'users' %}active{% endif %}" href="{% url 'admin_users' %}">Utenti</a></li>
+  {% endif %}
 </ul>
