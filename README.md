@@ -18,6 +18,7 @@ deciso dall'amministratore welfare.
 - [Migrazioni](#migrazioni)
 - [Superuser](#superuser)
 - [Dati demo](#dati-demo)
+- [Rimuovere i dati demo](#rimuovere-i-dati-demo)
 - [Esecuzione dei test](#esecuzione-dei-test)
 - [Cloudflare R2](#cloudflare-r2-allegati-su-bucket-privato)
 - [Deploy su Railway](#deploy-su-railway)
@@ -178,6 +179,45 @@ Crea (in modo idempotente):
 
 Il Buono spesa Muraglia da €50 esiste a catalogo senza essere assegnato a Giuseppe:
 è visibile nel catalogo convenzioni ma non richiedibile.
+
+## Rimuovere i dati demo
+
+Prima di passare in esercizio si eliminano i dati dimostrativi con:
+
+```bash
+python manage.py clear_demo_data --dry-run   # mostra cosa verrebbe eliminato
+python manage.py clear_demo_data --yes       # esegue
+```
+
+Il comando rimuove **solo** ciò che `seed_demo` aveva creato — utenti `antonia` e
+`giuseppe` con profili, budget, allocazioni, richieste, consegne e allegati; le
+convenzioni Muraglia Srlrs, OroDance e Associazione Yoga con i relativi tipi voucher;
+il programma «Piano Welfare» — e si ferma davanti a tutto il resto:
+
+- non tocca mai un **superuser** (se hai promosso Antonia, viene saltata e segnalata);
+- non elimina una **convenzione o un tipo voucher** già assegnato a dipendenti reali;
+- non elimina il **programma welfare** se contiene budget o allocazioni di altri;
+- non tocca alcun utente fuori dall'elenco demo.
+
+`--dry-run` produce esattamente lo stesso resoconto dell'esecuzione reale, senza
+scrivere nulla: usalo sempre prima.
+
+### Senza terminale (Railway)
+
+Railway non offre una shell, quindi il comando è già nella sequenza di avvio in forma
+inerte. Per eseguirlo una volta:
+
+1. imposta `SEED_DEMO=false` (altrimenti i dati verrebbero ricreati e il comando si
+   rifiuta di partire, segnalandolo);
+2. aggiungi `CLEAR_DEMO_DATA=true` e fai ripartire il servizio;
+3. controlla nei *Deploy Logs* il resoconto di ciò che è stato eliminato;
+4. **rimuovi `CLEAR_DEMO_DATA`** dalle variabili.
+
+Il comando è idempotente: a ogni riavvio successivo non trova più nulla da eliminare.
+
+In alternativa, se non hai ancora inserito dati reali, la strada più netta è azzerare
+il database: elimina il servizio PostgreSQL su Railway e creane uno nuovo. Al riavvio
+`migrate` ricrea le tabelle vuote e `ensure_superuser` il primo utente.
 
 ## Esecuzione dei test
 
