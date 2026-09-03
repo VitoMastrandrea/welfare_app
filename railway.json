@@ -5,8 +5,7 @@
     "buildCommand": "pip install -r requirements.txt && python manage.py collectstatic --noinput"
   },
   "deploy": {
-    "preDeployCommand": "python manage.py migrate --noinput",
-    "startCommand": "gunicorn config.wsgi:application --bind 0.0.0.0:$PORT --workers ${WEB_CONCURRENCY:-3} --timeout 60 --access-logfile -",
+    "startCommand": "python manage.py migrate --noinput && gunicorn config.wsgi:application --bind 0.0.0.0:$PORT --workers ${WEB_CONCURRENCY:-3} --timeout 60 --access-logfile -",
     "healthcheckPath": "/health/",
     "healthcheckTimeout": 120,
     "restartPolicyType": "ON_FAILURE",
