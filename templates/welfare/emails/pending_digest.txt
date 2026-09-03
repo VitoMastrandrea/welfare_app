@@ -1,0 +1,15 @@
+{% load welfare_extras %}Riepilogo delle pratiche welfare ancora aperte{% if program %} — {{ program.name }}{% endif %}.
+
+RICHIESTE DA APPROVARE: {{ pending|length }}
+{% for req in pending %}- {{ req.requested_at|date:"d/m/Y" }} — {{ req.allocation.employee.display_name }}: {{ req.allocation.voucher_type.convention.name }} / {{ req.allocation.voucher_type.name }} × {{ req.quantity }} = € {{ req.total_value|euro }}
+{% empty %}- nessuna
+{% endfor %}
+APPROVATE DA CONSEGNARE: {{ to_deliver|length }}
+{% for req in to_deliver %}- approvata il {{ req.processed_at|date:"d/m/Y" }} — {{ req.allocation.employee.display_name }}: {{ req.allocation.voucher_type.convention.name }} / {{ req.allocation.voucher_type.name }} × {{ req.quantity }} = € {{ req.total_value|euro }}
+{% empty %}- nessuna
+{% endfor %}{% if requests_url %}
+Gestisci le richieste:
+{{ requests_url }}
+{% endif %}
+--
+Messaggio automatico della piattaforma welfare aziendale.
