@@ -217,13 +217,23 @@ finiscono in `media/`.
    Genera la chiave con:
    `python -c "from django.core.management.utils import get_random_secret_key as k; print(k())"`
 
-4. Il file `railway.json` configura già:
+4. Il file `railway.json` configura già tutto:
    - build: `pip install -r requirements.txt && python manage.py collectstatic --noinput`
-   - pre-deploy: `python manage.py migrate --noinput`
-   - start: `gunicorn config.wsgi:application --bind 0.0.0.0:$PORT ...`
+   - start: `python manage.py migrate --noinput && gunicorn config.wsgi:application ...`
    - health check su `/health/`
 
    (È presente anche un `Procfile` equivalente per altre piattaforme.)
+
+   **Le migrazioni girano all'avvio, non durante la build.** Su Railway il database
+   è raggiungibile solo attraverso la rete privata, che *non esiste in fase di build*:
+   un `migrate` eseguito lì fallisce con
+   `failed to resolve host 'postgres.railway.internal'`. La build si limita quindi a
+   installare le dipendenze e a fare `collectstatic`, operazioni che non toccano il
+   database.
+
+   Non impostare comandi personalizzati nella UI di Railway: i campi *Build Command*,
+   *Pre-Deploy Command* e *Custom Start Command* vanno lasciati vuoti, altrimenti
+   hanno la precedenza su `railway.json`.
 
 5. Al primo deploy, dalla console del servizio:
 
@@ -236,6 +246,16 @@ finiscono in `media/`.
 L'endpoint `/health/` risponde `200 {"status": "ok"}` se l'app e il database sono
 raggiungibili, `503` altrimenti; è escluso dal redirect HTTPS perché Railway lo
 interroga in HTTP interno.
+
+### Se il deploy fallisce
+
+| Sintomo | Causa | Rimedio |
+|---|---|---|
+| Build fallita con `failed to resolve host 'postgres.railway.internal'` | Un comando che usa il database (tipicamente `migrate`) sta girando in fase di build, dove la rete privata non esiste | Svuota il campo *Build Command* nella UI (Settings → Build): deve valere quello di `railway.json`, che fa solo `pip install` e `collectstatic` |
+| `DisallowedHost` / errore 400 | Il dominio non è in `ALLOWED_HOSTS` | Genera il dominio (Settings → Networking) e inseriscilo in `ALLOWED_HOSTS` |
+| `ImproperlyConfigured: SECRET_KEY` | Variabile mancante | Imposta `SECRET_KEY` fra le variabili del servizio |
+| Health check in timeout | L'app non parte: guarda i *Deploy Logs* | Spesso è `DATABASE_URL` assente o errata: deve essere `${{Postgres.DATABASE_URL}}` |
+| Allegati che spariscono dopo un redeploy | Variabili `R2_*` non impostate: i file finiscono sul filesystem effimero del container | Configura il bucket Cloudflare R2 |
 
 ## Architettura
 
