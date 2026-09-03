@@ -136,12 +136,28 @@ Il superuser accede al Django Admin (`/django-admin/`) e, avendo tutti i permess
 anche all'area Amministrazione welfare. Per usarlo anche come dipendente creagli un
 `EmployeeProfile` dal Django Admin.
 
+Dove non c'è un terminale interattivo (per esempio su Railway) esiste l'equivalente
+non interattivo, che legge le variabili d'ambiente e non fa nulla se l'utente esiste
+già o se le variabili mancano:
+
+```bash
+DJANGO_SUPERUSER_USERNAME=admin \
+DJANGO_SUPERUSER_EMAIL=admin@azienda.it \
+DJANGO_SUPERUSER_PASSWORD='...' \
+python manage.py ensure_superuser
+```
+
 ## Dati demo
 
 ```bash
 python manage.py seed_demo                 # password predefinita: welfare2026
 python manage.py seed_demo --password ...  # password personalizzata
+python manage.py seed_demo --if-requested  # esegue solo se SEED_DEMO è attiva
 ```
+
+La password può arrivare anche dalla variabile `SEED_DEMO_PASSWORD`. L'opzione
+`--if-requested` serve in produzione: il comando è nel comando di avvio e resta
+inerte finché non imposti `SEED_DEMO=true` fra le variabili d'ambiente.
 
 Crea (in modo idempotente):
 
@@ -219,7 +235,7 @@ finiscono in `media/`.
 
 4. Il file `railway.json` configura già tutto:
    - build: `pip install -r requirements.txt && python manage.py collectstatic --noinput`
-   - start: `python manage.py migrate --noinput && gunicorn config.wsgi:application ...`
+   - start: `migrate` → `ensure_superuser` → `seed_demo --if-requested` → Gunicorn
    - health check su `/health/`
 
    (È presente anche un `Procfile` equivalente per altre piattaforme.)
@@ -235,13 +251,46 @@ finiscono in `media/`.
    *Pre-Deploy Command* e *Custom Start Command* vanno lasciati vuoti, altrimenti
    hanno la precedenza su `railway.json`.
 
-5. Al primo deploy, dalla console del servizio:
+5. **Crea le credenziali iniziali.** Railway non offre un terminale interattivo sul
+   container, quindi il primo utente si crea da variabili d'ambiente: all'avvio il
+   servizio esegue `ensure_superuser` e, se richiesto, `seed_demo`.
 
-   ```bash
-   python manage.py createsuperuser
+   Aggiungi temporaneamente queste variabili e fai ripartire il servizio:
+
+   ```
+   DJANGO_SUPERUSER_USERNAME=admin
+   DJANGO_SUPERUSER_EMAIL=admin@azienda.it
+   DJANGO_SUPERUSER_PASSWORD=<password robusta>
    ```
 
-   e — se vuoi i dati dimostrativi — `python manage.py seed_demo`.
+   Se vuoi anche utenti e dati applicativi con cui provare subito l'applicazione:
+
+   ```
+   SEED_DEMO=true
+   SEED_DEMO_PASSWORD=<password per gli utenti demo>
+   ```
+
+   Ottieni così tre utenti:
+
+   | Utente | Ruolo | Cosa vede |
+   |---|---|---|
+   | `admin` | superuser, senza profilo dipendente | Django Admin e area Amministrazione welfare |
+   | `antonia` | Welfare Manager **e** dipendente | Area dipendente **e** Amministrazione welfare |
+   | `giuseppe` | dipendente | Solo la propria area dipendente |
+
+   Entrambi i comandi sono **idempotenti**: a ogni riavvio non duplicano nulla e non
+   sovrascrivono la password di un utente che esiste già.
+
+   **Dopo il primo accesso rimuovi `DJANGO_SUPERUSER_PASSWORD` e `SEED_DEMO_PASSWORD`
+   dalle variabili**, e imposta `SEED_DEMO=false` per non ricreare i dati demo.
+   Cambia la password dell'admin dall'applicazione (voce *Password* nella barra in alto).
+
+   In alternativa, se usi la [CLI di Railway](https://docs.railway.com/guides/cli):
+
+   ```bash
+   railway link
+   railway ssh python manage.py createsuperuser
+   ```
 
 L'endpoint `/health/` risponde `200 {"status": "ok"}` se l'app e il database sono
 raggiungibili, `503` altrimenti; è escluso dal redirect HTTPS perché Railway lo
