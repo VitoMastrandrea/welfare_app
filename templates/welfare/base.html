@@ -26,7 +26,18 @@
             <li class="nav-item"><a class="nav-link" href="{% url 'catalog' %}">Convenzioni</a></li>
           {% endif %}
           {% if is_welfare_manager %}
-            <li class="nav-item"><a class="nav-link fw-semibold text-primary" href="{% url 'admin_dashboard' %}">Amministrazione welfare</a></li>
+            <li class="nav-item">
+              <a class="nav-link fw-semibold text-primary d-flex align-items-center gap-1"
+                 href="{% if pending_requests_count %}{% url 'admin_requests' %}?stato=PENDING{% else %}{% url 'admin_dashboard' %}{% endif %}">
+                Amministrazione welfare
+                {% if pending_requests_count %}
+                  <span class="badge rounded-pill text-bg-danger"
+                        title="{{ pending_requests_count }} richiesta{{ pending_requests_count|pluralize:"e" }} in attesa di approvazione">
+                    {{ pending_requests_count }}
+                  </span>
+                {% endif %}
+              </a>
+            </li>
           {% endif %}
         </ul>
         <ul class="navbar-nav align-items-lg-center">

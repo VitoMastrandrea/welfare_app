@@ -23,6 +23,7 @@ deciso dall'amministratore welfare.
 - [Deploy su Railway](#deploy-su-railway)
 - [Architettura](#architettura)
 - [Gestione utenti dal frontend](#gestione-utenti-dal-frontend)
+- [Notifiche](#notifiche)
 - [Modello dei dati e regole di dominio](#modello-dei-dati-e-regole-di-dominio)
 - [Ruoli e permessi](#ruoli-e-permessi)
 
@@ -91,6 +92,11 @@ lette anche dal file `.env` (non versionato). Riferimento completo in `.env.exam
 | `DB_SSL_REQUIRE` | no | Forza SSL verso il database. |
 | `R2_URL_EXPIRE_SECONDS` | no (300) | Scadenza delle URL firmate generate internamente. |
 | `ATTACHMENT_MAX_SIZE_MB` | no (10) | Dimensione massima di un allegato. |
+| `WELFARE_NOTIFICATION_EMAIL` | no | Unico destinatario delle notifiche (default `agevolazioni@studiobirardi.it`). |
+| `EMAIL_HOST`, `EMAIL_PORT`, `EMAIL_HOST_USER`, `EMAIL_HOST_PASSWORD` | per le notifiche | Server SMTP. Senza `EMAIL_HOST` le notifiche restano inerti. |
+| `EMAIL_USE_TLS` / `EMAIL_USE_SSL` | no (TLS attivo) | Cifratura della connessione SMTP. |
+| `DEFAULT_FROM_EMAIL` | no | Mittente delle notifiche. |
+| `SITE_BASE_URL` | no | URL pubblica per i link nelle email (dedotta da Railway se assente). |
 | `ATTACHMENT_ALLOWED_EXTENSIONS` | no | Estensioni ammesse per gli allegati. |
 | `SECURE_SSL_REDIRECT` | no (`True` in produzione) | Redirect HTTPS (l'endpoint `/health/` è esentato). |
 | `WEB_CONCURRENCY` | no (3) | Worker Gunicorn. |
@@ -408,6 +414,57 @@ Regole di sicurezza applicate lato server:
   eviterebbe di restare chiuso fuori;
 - gli account **non si eliminano**: si disattivano, così budget, richieste e consegne
   restano nello storico. Disattivare un account disattiva anche il suo profilo dipendente.
+
+## Notifiche
+
+Le notifiche amministrative hanno **un solo destinatario**, configurato in
+`WELFARE_NOTIFICATION_EMAIL` (default: `agevolazioni@studiobirardi.it`).
+**Ai dipendenti non viene inviata alcuna email.**
+
+Tre livelli, indipendenti fra loro:
+
+1. **Badge in applicazione** — accanto alla voce «Amministrazione welfare» compare il
+   numero di richieste in attesa, visibile da qualunque pagina ai Welfare Manager.
+   Non richiede alcuna configurazione.
+2. **Email alla nuova richiesta** — appena un dipendente invia una richiesta parte un
+   messaggio con dipendente, convenzione, voucher, quantità, valore, presenza di
+   allegati e link diretto alla richiesta. È l'unico evento notificato: approvazioni,
+   rifiuti e consegne li compie l'amministrazione stessa, avvisarla sarebbe rumore.
+3. **Riepilogo giornaliero** — elenco delle richieste da approvare e di quelle approvate
+   da consegnare. Se non c'è nulla in sospeso non viene inviato niente.
+
+### Configurazione SMTP
+
+Finché `EMAIL_HOST` è vuoto le notifiche restano **inerti**: l'applicazione funziona
+normalmente e nei log compare un avviso. In sviluppo (`DEBUG=True`) le email vengono
+stampate a console.
+
+```
+EMAIL_HOST=smtp.provider.it
+EMAIL_PORT=587
+EMAIL_HOST_USER=...
+EMAIL_HOST_PASSWORD=...
+EMAIL_USE_TLS=True
+DEFAULT_FROM_EMAIL=welfare@studiobirardi.it
+WELFARE_NOTIFICATION_EMAIL=agevolazioni@studiobirardi.it
+```
+
+Un invio che fallisce non fa mai fallire l'operazione dell'utente: la richiesta viene
+comunque registrata e l'errore finisce nei log. Le email partono a transazione conclusa
+(`transaction.on_commit`), quindi non viene mai notificata una richiesta non salvata.
+
+### Riepilogo giornaliero: come schedularlo
+
+```bash
+python manage.py send_pending_digest           # non invia nulla se non c'è niente in sospeso
+python manage.py send_pending_digest --force   # invia comunque
+```
+
+Su Railway: `+ New` → *GitHub Repo* (lo stesso repository) → nel nuovo servizio
+**Settings → Cron Schedule** inserisci `0 7 * * 1-5` (feriali alle 7:00 UTC) e come
+**Custom Start Command** `python manage.py send_pending_digest`. Assegna al servizio
+le stesse variabili d'ambiente dell'applicazione (`DATABASE_URL`, `SECRET_KEY`,
+`EMAIL_*`, `WELFARE_NOTIFICATION_EMAIL`, `SITE_BASE_URL`).
 
 ## Ruoli e permessi
 

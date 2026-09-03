@@ -1,0 +1,17 @@
+{% load welfare_extras %}È arrivata una nuova richiesta di voucher da approvare.
+
+Dipendente:   {{ employee.display_name }}
+Convenzione:  {{ voucher_type.convention.name }}
+Voucher:      {{ voucher_type.name }} (€ {{ voucher_type.unit_value|euro }} l'uno)
+Quantità:     {{ request.quantity }}
+Valore:       € {{ request.total_value|euro }}
+Data:         {{ request.requested_at|date:"d/m/Y H:i" }}
+Allegati:     {% if has_attachments %}sì{% else %}nessuno{% endif %}
+{% if url %}
+Apri la richiesta:
+{{ url }}
+{% else %}
+Accedi all'applicazione, sezione Amministrazione welfare > Richieste, per approvarla o rifiutarla.
+{% endif %}
+--
+Messaggio automatico della piattaforma welfare aziendale.

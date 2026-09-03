@@ -197,6 +197,39 @@ ATTACHMENT_ALLOWED_EXTENSIONS = env_list(
     "pdf,png,jpg,jpeg,gif,webp,doc,docx,xls,xlsx,odt,ods,txt,csv",
 )
 
+# --- Notifiche via email ----------------------------------------------------
+# Unico destinatario delle notifiche amministrative.
+WELFARE_NOTIFICATION_EMAIL = os.environ.get(
+    "WELFARE_NOTIFICATION_EMAIL", "agevolazioni@studiobirardi.it"
+)
+# URL pubblica dell'applicazione, usata per i link dentro le email.
+SITE_BASE_URL = os.environ.get("SITE_BASE_URL", "").rstrip("/")
+if not SITE_BASE_URL and RAILWAY_PUBLIC_DOMAIN:
+    SITE_BASE_URL = f"https://{RAILWAY_PUBLIC_DOMAIN}"
+
+EMAIL_HOST = os.environ.get("EMAIL_HOST", "")
+EMAIL_PORT = int(os.environ.get("EMAIL_PORT", "587"))
+EMAIL_HOST_USER = os.environ.get("EMAIL_HOST_USER", "")
+EMAIL_HOST_PASSWORD = os.environ.get("EMAIL_HOST_PASSWORD", "")
+EMAIL_USE_TLS = env_bool("EMAIL_USE_TLS", True)
+EMAIL_USE_SSL = env_bool("EMAIL_USE_SSL", False)
+EMAIL_TIMEOUT = int(os.environ.get("EMAIL_TIMEOUT", "10"))
+DEFAULT_FROM_EMAIL = os.environ.get(
+    "DEFAULT_FROM_EMAIL", EMAIL_HOST_USER or "welfare@localhost"
+)
+EMAIL_SUBJECT_PREFIX = os.environ.get("EMAIL_SUBJECT_PREFIX", "[Welfare] ")
+
+if EMAIL_HOST:
+    EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+elif DEBUG:
+    # In sviluppo le email finiscono a console: nessun invio reale.
+    EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+else:
+    # Senza SMTP configurato le notifiche restano inerti (viene loggato un avviso).
+    EMAIL_BACKEND = "django.core.mail.backends.dummy.EmailBackend"
+
+EMAIL_CONFIGURED = bool(EMAIL_HOST)
+
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 FILE_UPLOAD_MAX_MEMORY_SIZE = 5 * 1024 * 1024

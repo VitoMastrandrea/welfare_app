@@ -14,6 +14,7 @@ from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.utils import timezone
 
+from . import notifications
 from .models import (
     EmployeeBudget,
     EmployeeProfile,
@@ -215,6 +216,10 @@ def create_voucher_request(
     )
     for uploaded in files or []:
         add_attachment(request=request, uploaded_file=uploaded, actor=actor)
+
+    # La notifica parte solo a transazione conclusa, e un invio fallito non
+    # deve mai far fallire la richiesta del dipendente.
+    transaction.on_commit(lambda: notifications.notify_new_request(request))
     return request
 
 
