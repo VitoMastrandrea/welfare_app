@@ -8,6 +8,7 @@ Uso::
 
 from __future__ import annotations
 
+import os
 from decimal import Decimal
 
 from django.contrib.auth.models import Group, User
@@ -32,13 +33,43 @@ class Command(BaseCommand):
     def add_arguments(self, parser):
         parser.add_argument(
             "--password",
-            default=DEFAULT_PASSWORD,
-            help="Password assegnata agli utenti demo (default: %(default)s).",
+            default=None,
+            help=(
+                "Password assegnata agli utenti demo. "
+                f"Default: variabile SEED_DEMO_PASSWORD, altrimenti «{DEFAULT_PASSWORD}»."
+            ),
+        )
+        parser.add_argument(
+            "--if-requested",
+            action="store_true",
+            help=(
+                "Non fa nulla se la variabile d'ambiente SEED_DEMO non è attiva. "
+                "Utile per eseguire il comando all'avvio in produzione."
+            ),
         )
 
-    @transaction.atomic
     def handle(self, *args, **options):
-        password = options["password"]
+        if options["if_requested"] and not self._seed_requested():
+            self.stdout.write("seed_demo: SEED_DEMO non attiva, nessun dato creato.")
+            return
+        password = (
+            options["password"]
+            or os.environ.get("SEED_DEMO_PASSWORD")
+            or DEFAULT_PASSWORD
+        )
+        self._seed(password)
+
+    @staticmethod
+    def _seed_requested() -> bool:
+        return (os.environ.get("SEED_DEMO") or "").strip().lower() in {
+            "1",
+            "true",
+            "yes",
+            "on",
+        }
+
+    @transaction.atomic
+    def _seed(self, password: str):
 
         program, _ = WelfareProgram.objects.get_or_create(
             name="Piano Welfare",
