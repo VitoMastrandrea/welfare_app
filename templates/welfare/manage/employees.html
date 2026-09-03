@@ -35,5 +35,12 @@
     </table>
   </div>
 </div>
-<p class="form-text mt-2">Nuovi dipendenti e utenti si creano dal <a href="/django-admin/">pannello Django</a>.</p>
+{% if user.is_staff %}
+  <p class="form-text mt-2">
+    Nuovi dipendenti si creano dalla sezione <a href="{% url 'admin_users' %}">Utenti</a>:
+    crea l'account e spunta «Profilo dipendente attivo».
+  </p>
+{% else %}
+  <p class="form-text mt-2">Per creare nuovi dipendenti rivolgiti a un utente con privilegi di staff.</p>
+{% endif %}
 {% endblock %}

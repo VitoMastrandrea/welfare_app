@@ -364,3 +364,164 @@ def employee_timeline(employee: EmployeeProfile, program: WelfareProgram) -> lis
         )
     events.sort(key=lambda item: item["date"], reverse=True)
     return events
+
+
+# ---------------------------------------------------------------------------
+# Gestione degli account utente (riservata allo staff)
+# ---------------------------------------------------------------------------
+def _welfare_managers_group():
+    from django.contrib.auth.models import Group
+
+    from .permissions import WELFARE_MANAGERS_GROUP
+
+    group, _ = Group.objects.get_or_create(name=WELFARE_MANAGERS_GROUP)
+    return group
+
+
+def set_welfare_manager(*, user, enabled: bool) -> None:
+    """Aggiunge o rimuove l'utente dal gruppo Welfare Managers."""
+    group = _welfare_managers_group()
+    if enabled:
+        user.groups.add(group)
+    else:
+        user.groups.remove(group)
+
+
+def set_employee_profile_state(
+    *, user, enabled: bool, employee_code: str = "", actor=None
+) -> "EmployeeProfile | None":
+    """Crea, riattiva o disattiva il profilo dipendente di un utente.
+
+    Il profilo non viene mai eliminato: budget, allocazioni e storico vi fanno
+    riferimento. Disattivarlo toglie l'accesso all'area dipendente.
+    """
+    profile = EmployeeProfile.objects.filter(user=user).first()
+    code = (employee_code or "").strip() or None
+
+    if profile is None:
+        if not enabled:
+            return None
+        return EmployeeProfile.objects.create(user=user, employee_code=code, active=True)
+
+    profile.active = enabled
+    profile.employee_code = code
+    profile.save(update_fields=["active", "employee_code", "updated_at"])
+    return profile
+
+
+@transaction.atomic
+def create_user_account(
+    *,
+    actor,
+    username: str,
+    password: str,
+    first_name: str = "",
+    last_name: str = "",
+    email: str = "",
+    is_active: bool = True,
+    is_staff: bool = False,
+    is_superuser: bool = False,
+    welfare_manager: bool = False,
+    employee_profile: bool = False,
+    employee_code: str = "",
+):
+    """Crea un account utente. Solo un superuser può crearne un altro."""
+    from django.contrib.auth import get_user_model
+
+    User = get_user_model()
+    if is_superuser and not actor.is_superuser:
+        raise WelfareError(
+            {"is_superuser": "Solo un superuser può assegnare privilegi di superuser."}
+        )
+
+    user = User(
+        username=username,
+        first_name=first_name,
+        last_name=last_name,
+        email=email,
+        is_active=is_active,
+        is_staff=is_staff or is_superuser,
+        is_superuser=is_superuser,
+    )
+    user.set_password(password)
+    user.save()
+
+    set_welfare_manager(user=user, enabled=welfare_manager)
+    set_employee_profile_state(
+        user=user, enabled=employee_profile, employee_code=employee_code, actor=actor
+    )
+    return user
+
+
+@transaction.atomic
+def update_user_account(
+    *,
+    actor,
+    user,
+    username: str,
+    first_name: str = "",
+    last_name: str = "",
+    email: str = "",
+    is_active: bool = True,
+    is_staff: bool = False,
+    is_superuser: bool | None = None,
+    welfare_manager: bool = False,
+    employee_profile: bool = False,
+    employee_code: str = "",
+):
+    """Aggiorna un account esistente, senza mai permettere di bloccarsi fuori."""
+    if is_superuser is not None and is_superuser != user.is_superuser and not actor.is_superuser:
+        raise WelfareError(
+            {"is_superuser": "Solo un superuser può modificare i privilegi di superuser."}
+        )
+
+    if user.pk == actor.pk:
+        # Nessuno può togliersi da solo accesso e privilegi: si resterebbe fuori.
+        is_active = True
+        is_staff = True
+        if is_superuser is not None:
+            is_superuser = user.is_superuser
+
+    user.username = username
+    user.first_name = first_name
+    user.last_name = last_name
+    user.email = email
+    user.is_active = is_active
+    if is_superuser is not None:
+        user.is_superuser = is_superuser
+    user.is_staff = is_staff or user.is_superuser
+    user.save()
+
+    set_welfare_manager(user=user, enabled=welfare_manager)
+    set_employee_profile_state(
+        user=user, enabled=employee_profile, employee_code=employee_code, actor=actor
+    )
+    return user
+
+
+@transaction.atomic
+def set_user_password(*, actor, user, password: str) -> None:
+    """Imposta la password di un altro utente (solo staff autorizzato)."""
+    from .permissions import can_manage_user
+
+    if not can_manage_user(actor, user):
+        raise WelfareError("Non puoi modificare la password di questo utente.")
+    user.set_password(password)
+    user.save(update_fields=["password"])
+
+
+@transaction.atomic
+def set_user_active(*, actor, user, active: bool):
+    """Attiva o disattiva un account; gli account non si eliminano mai."""
+    from .permissions import can_manage_user
+
+    if not can_manage_user(actor, user):
+        raise WelfareError("Non puoi modificare questo utente.")
+    if user.pk == actor.pk and not active:
+        raise WelfareError("Non puoi disattivare il tuo stesso account.")
+    user.is_active = active
+    user.save(update_fields=["is_active"])
+    if not active:
+        # L'utente disattivato non deve più risultare dipendente attivo.
+        EmployeeProfile.objects.filter(user=user).update(active=False)
+    return user

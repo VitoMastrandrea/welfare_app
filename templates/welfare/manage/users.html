@@ -1,0 +1,75 @@
+{% extends "welfare/base.html" %}
+{% block title %}Utenti{% endblock %}
+{% block page_title %}Utenti e accessi{% endblock %}
+{% block page_actions %}<a class="btn btn-primary" href="{% url 'admin_user_create' %}">Nuovo utente</a>{% endblock %}
+{% block content %}
+{% include "welfare/manage/_nav.html" with active='users' %}
+
+<form method="get" class="row g-2 mb-3">
+  <div class="col-sm-6 col-lg-4">
+    <input type="search" name="q" value="{{ q }}" class="form-control" placeholder="Cerca per nome, cognome, email...">
+  </div>
+  <div class="col-auto"><button class="btn btn-outline-secondary" type="submit">Cerca</button></div>
+</form>
+
+<div class="card">
+  <div class="table-responsive">
+    <table class="table table-hover align-middle mb-0">
+      <thead>
+        <tr><th>Utente</th><th>Nome utente</th><th>Ruoli</th><th>Stato</th><th class="text-end">Azioni</th></tr>
+      </thead>
+      <tbody>
+      {% for row in rows %}
+        <tr>
+          <td>
+            {{ row.user.get_full_name|default:"—" }}
+            <div class="small text-muted">{{ row.user.email|default:"nessuna email" }}</div>
+          </td>
+          <td><code>{{ row.user.username }}</code></td>
+          <td>
+            {% if row.user.is_superuser %}<span class="badge text-bg-dark">Superuser</span>{% endif %}
+            {% if row.user.is_staff %}<span class="badge text-bg-primary">Staff</span>{% endif %}
+            {% if row.is_manager %}<span class="badge text-bg-info text-dark">Welfare Manager</span>{% endif %}
+            {% if row.profile and row.profile.active %}
+              <span class="badge text-bg-secondary">Dipendente</span>
+              {% if row.profile.employee_code %}<span class="small text-muted">{{ row.profile.employee_code }}</span>{% endif %}
+            {% endif %}
+          </td>
+          <td>
+            {% if row.user.is_active %}
+              <span class="badge text-bg-success">Attivo</span>
+            {% else %}
+              <span class="badge text-bg-secondary">Disattivato</span>
+            {% endif %}
+          </td>
+          <td class="text-end">
+            {% if row.editable %}
+              <div class="d-inline-flex gap-1 flex-wrap justify-content-end">
+                <a class="btn btn-sm btn-outline-primary" href="{% url 'admin_user_edit' row.user.pk %}">Modifica</a>
+                <a class="btn btn-sm btn-outline-secondary" href="{% url 'admin_user_password' row.user.pk %}">Password</a>
+                {% if row.user.pk != user.pk %}
+                  <form method="post" action="{% url 'admin_user_toggle_active' row.user.pk %}" class="d-inline">
+                    {% csrf_token %}
+                    <input type="hidden" name="active" value="{% if row.user.is_active %}0{% else %}1{% endif %}">
+                    <button type="submit" class="btn btn-sm {% if row.user.is_active %}btn-outline-danger{% else %}btn-outline-success{% endif %}">
+                      {% if row.user.is_active %}Disattiva{% else %}Riattiva{% endif %}
+                    </button>
+                  </form>
+                {% endif %}
+              </div>
+            {% else %}
+              <span class="small text-muted">Solo un superuser può modificarlo</span>
+            {% endif %}
+          </td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="5" class="text-muted">Nessun utente trovato.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+<p class="form-text mt-2">
+  Gli account non si eliminano: disattivandoli si toglie l'accesso conservando budget, richieste e consegne già registrate.
+</p>
+{% endblock %}
